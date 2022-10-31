@@ -4,10 +4,11 @@ from pkg_resources import get_distribution, DistributionNotFound
 from collections.abc import MutableMapping
 import sys
 import warnings
+import httpx
 
 __version__ = 'installed-from-git'
 
-from .myrequests import myrequests_get
+from .myrequests import myrequests_get, async_httpx_client
 from .compat import munge_fields, munge_filter
 from .commoncrawl import get_cc_endpoints, apply_cc_defaults, filter_cc_endpoints
 from .warc import fetch_wb_warc, fetch_warc_record
@@ -100,26 +101,28 @@ class CaptureObject(MutableMapping):
             return True
         return False
 
-    def fetch_warc_record(self):
+    async def fetch_warc_record(self):
         if self.warc_record is not None:
             return self.warc_record
         if self.wb:
-            self.warc_record = fetch_wb_warc(self.data, wb=self.wb)
+            self.warc_record = await fetch_wb_warc(self.data, wb=self.wb)
         elif self.warc_download_prefix:
-            self.warc_record = fetch_warc_record(self.data, self.warc_download_prefix)
+            self.warc_record = await fetch_warc_record(self.data, self.warc_download_prefix)
         else:
             raise ValueError('no content source configured')
         return self.warc_record
 
-    @property
-    def content_stream(self):
-        return self.fetch_warc_record().content_stream()
+    #@property
+    async def content_stream(self):
+        rec = await self.fetch_warc_record()
+        return rec.content_stream()
 
-    @property
-    def content(self):
+    #@property
+    async def content(self):
         if self._content:
             return self._content
-        self._content = self.fetch_warc_record().content_stream().read()
+        rec = await self.fetch_warc_record()
+        self._content = rec.content_stream().read()
         return self._content
 
     @property
@@ -162,16 +165,14 @@ class CDXFetcherIter:
         self.captures = []
         self.index_list = index_list
 
-        self.get_more()
-
-    def get_more(self):
+    async def get_more(self):
         while True:
             self.page += 1
 
             if self.page == 0 and len(self.index_list) > 0 and self.endpoint < len(self.index_list):
                 LOGGER.info('get_more: fetching cdx from %s', self.index_list[self.endpoint])
 
-            status, objs = self.cdxfetcher.get_for_iter(self.endpoint, self.page,
+            status, objs = await self.cdxfetcher.get_for_iter(self.endpoint, self.page,
                                                         params=self.params, index_list=self.index_list)
             if status == 'last endpoint':
                 LOGGER.debug('get_more: I have reached the end')
@@ -186,22 +187,23 @@ class CDXFetcherIter:
             if len(self.captures) > 0:
                 break
 
-    def __iter__(self):
+    def __aiter__(self):
+        #await self.get_more()
         return self
 
-    def __next__(self):
+    async def __anext__(self):
         while True:
             try:
                 return self.captures.pop(0)
             except IndexError:
-                LOGGER.debug('getting more in __next__')
-                self.get_more()
+                LOGGER.debug('getting more in __anext__')
+                await self.get_more()
                 if len(self.captures) <= 0:
-                    raise StopIteration
+                    raise StopAsyncIteration
 
 
 class CDXFetcher:
-    def __init__(self, source='cc', wb=None, warc_download_prefix=None, cc_mirror=None, cc_sort='mixed', loglevel=None):
+    def __init__(self, source='cc', wb=None, warc_download_prefix=None, cc_mirror=None, cc_sort='mixed', loglevel=None, transport=None):
         self.source = source
         self.cc_sort = cc_sort
         self.source = source
@@ -210,24 +212,31 @@ class CDXFetcher:
         self.wb = wb
         self.warc_download_prefix = warc_download_prefix
 
-        if source == 'cc':
+        if loglevel:
+            LOGGER.setLevel(level=loglevel)
+
+        if self.source == 'cc':
             self.cc_mirror = cc_mirror or 'https://index.commoncrawl.org/'
-            self.raw_index_list = get_cc_endpoints(self.cc_mirror)
             if wb is not None:
                 raise ValueError('cannot specify wb= for source=cc')
             self.warc_download_prefix = warc_download_prefix or 'https://data.commoncrawl.org'
             #https://commoncrawl.s3.amazonaws.com
-        elif source == 'ia':
+        elif self.source == 'ia':
             self.index_list = ('https://web.archive.org/cdx/search/cdx',)
             if self.warc_download_prefix is None and self.wb is None:
                 self.wb = 'https://web.archive.org/web'
-        elif source.startswith('https://') or source.startswith('http://'):
+        elif self.source.startswith('https://') or source.startswith('http://'):
             self.index_list = (source,)
         else:
             raise ValueError('could not understand source')
 
-        if loglevel:
-            LOGGER.setLevel(level=loglevel)
+        self.transport = AsyncProxyTransport.from_url(transport) if transport else None
+        self.session = httpx.AsyncClient(transport=self.transport)
+        async_httpx_client.set(self.session)
+
+    async def prepare(self):
+        if self.source == 'cc':
+            self.raw_index_list = await get_cc_endpoints(self.cc_mirror, session=self.session)
 
     def customize_index_list(self, params):
         if self.source == 'cc' and ('from' in params or 'from_ts' in params or 'to' in params or 'closest' in params):
@@ -236,7 +245,7 @@ class CDXFetcher:
         else:
             return self.index_list
 
-    def get(self, url, **kwargs):
+    async def get(self, url, **kwargs):
         # from_ts=None, to=None, matchType=None, limit=None, sort=None, closest=None,
         # filter=None, fl=None, page=None, pageSize=None, showNumPages=None):
         params = kwargs
@@ -258,7 +267,7 @@ class CDXFetcher:
 
         ret = []
         for endpoint in index_list:
-            resp = myrequests_get(endpoint, params=params, cdx=True)
+            resp = await myrequests_get(endpoint, session=self.session, params=params, cdx=True)
             objs = cdx_to_captures(resp, wb=self.wb, warc_download_prefix=self.warc_download_prefix)  # turns 400 and 404 into []
             ret.extend(objs)
             if 'limit' in params:
@@ -290,7 +299,7 @@ class CDXFetcher:
         )
         return self.iter(url, **kwargs)
 
-    def get_for_iter(self, endpoint, page, params={}, index_list=None):
+    async def get_for_iter(self, endpoint, page, params={}, index_list=None):
         '''
         Specalized get for the iterator
         '''
@@ -301,7 +310,7 @@ class CDXFetcher:
 
         endpoint = index_list[endpoint]
         params['page'] = page
-        resp = myrequests_get(endpoint, params=params, cdx=True)
+        resp = await myrequests_get(endpoint, session=self.session, params=params, cdx=True)
         if resp.status_code == 400:  # pywb
             return 'last page', []
         if resp.text == '':  # ia
@@ -312,7 +321,7 @@ class CDXFetcher:
             params['limit'] -= len(ret)
         return 'ok', ret
 
-    def get_size_estimate(self, url, as_pages=False, **kwargs):
+    async def get_size_estimate(self, url, as_pages=False, **kwargs):
         '''
         Get the number of pages that match url
 
@@ -336,7 +345,7 @@ class CDXFetcher:
         total_pages = 0
         total_samples = 0
         for endpoint in index_list:
-            resp = myrequests_get(endpoint, params=params, cdx=True)
+            resp = await myrequests_get(endpoint, session=self.session, params=params, cdx=True)
             if resp.status_code == 200:
                 pages = showNumPages(resp)
                 total_pages += pages

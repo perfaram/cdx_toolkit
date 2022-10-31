@@ -1,3 +1,6 @@
+- 0.10.0
+	+ made all methods that make network requests async
+
 - 0.9.34
 	+ renamed class CDXFetcher kwarg warc_url_prefix to warc_download_prefix
 	+ changed CC warc downloads to use the Cloudfront url, which has rate limits

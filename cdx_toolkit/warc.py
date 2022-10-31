@@ -95,7 +95,7 @@ def fake_wb_warc(url, wb_url, resp, capture):
                                      warc_headers_dict=warc_headers_dict)
 
 
-def fetch_wb_warc(capture, wb, modifier='id_'):
+async def fetch_wb_warc(capture, wb, session=None, modifier='id_'):
     for field in ('url', 'timestamp', 'status'):
         if field not in capture:  # pragma: no cover
             raise ValueError('capture must contain '+field)
@@ -115,12 +115,12 @@ def fetch_wb_warc(capture, wb, modifier='id_'):
         # (also has 'mime': 'warc/revisit')
         kwargs['allow404'] = True
 
-    resp = myrequests_get(wb_url, **kwargs)
+    resp = await myrequests_get(wb_url, session=session, **kwargs)
 
     return fake_wb_warc(url, wb_url, resp, capture)
 
 
-def fetch_warc_record(capture, warc_download_prefix):
+async def fetch_warc_record(capture, warc_download_prefix, session=None):
     for field in ('url', 'filename', 'offset', 'length'):
         if field not in capture:  # pragma: no cover
             raise ValueError('capture must contain '+field)
@@ -133,7 +133,7 @@ def fetch_warc_record(capture, warc_download_prefix):
     warc_url = warc_download_prefix + '/' + filename
     headers = {'Range': 'bytes={}-{}'.format(offset, offset+length-1)}
 
-    resp = myrequests_get(warc_url, headers=headers)
+    resp = await myrequests_get(warc_url, session=session, headers=headers)
     record_bytes = resp.content
     stream = DecompressingBufferedReader(BytesIO(record_bytes))
     record = ArcWarcRecordLoader().parse_record_stream(stream)

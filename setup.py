@@ -10,7 +10,7 @@ packages = [
 ]
 
 # remember: keep requires synchronized with requirements.txt
-requires = ['requests', 'warcio']
+requires = ['httpx', 'anyio', 'warcio']
 
 test_requirements = ['pytest', 'pytest-cov', 'coveralls']
 
@@ -28,14 +28,14 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     description = f.read()
 
 setup(
-    name='cdx_toolkit',
+    name='cdx_toolkit_async',
     use_scm_version=True,
     description='A toolkit for working with CDX indices',
     long_description=description,
     long_description_content_type='text/markdown',
     author='Greg Lindahl and others',
     author_email='lindahl@pbm.com',
-    url='https://github.com/cocrawler/cdx_toolkit',
+    url='https://github.com/perfaram/cdx_toolkit_async',
     packages=packages,
     python_requires=">=3.6.*",
     extras_require=extras_require,

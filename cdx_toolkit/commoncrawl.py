@@ -13,9 +13,9 @@ from .timeutils import time_to_timestamp, timestamp_to_time, pad_timestamp_up, c
 LOGGER = logging.getLogger(__name__)
 
 
-def get_cc_endpoints(cc_mirror):
+async def get_cc_endpoints(cc_mirror, session=None):
     collinfo = cc_mirror.rstrip('/') + '/collinfo.json'
-    r = myrequests_get(collinfo)
+    r = await myrequests_get(collinfo, session=session)
     if r.status_code != 200:
         raise RuntimeError('error {} getting list of cc indices from {}'.format(r.status_code, collinfo))  # pragma: no cover
 

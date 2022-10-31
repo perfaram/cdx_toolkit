@@ -1,7 +1,8 @@
 # Install with "python -m pip install -r requirements.txt".
 # must be kept in sync with setup.py
 
-requests==2.25.1
+httpx==0.23.0
+anyio==3.6.2
 warcio==1.7.4
 
 # used by Makefile
