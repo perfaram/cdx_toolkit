@@ -1,6 +1,6 @@
 import pytest
 
-import cdx_toolkit
+import cdx_toolkit_async
 
 
 def test_munge_filter():
@@ -10,11 +10,11 @@ def test_munge_filter():
              ('url:foo', 'original:foo', 'url:foo'))
 
     for t, ia, cc in tests:
-        assert cdx_toolkit.munge_filter([t], 'ia') == [ia]
-        assert cdx_toolkit.munge_filter([t], 'cc') == [cc]
+        assert cdx_toolkit_async.munge_filter([t], 'ia') == [ia]
+        assert cdx_toolkit_async.munge_filter([t], 'cc') == [cc]
 
     with pytest.raises(ValueError):
-        assert cdx_toolkit.munge_filter(['!=status:200'], 'ia')
+        assert cdx_toolkit_async.munge_filter(['!=status:200'], 'ia')
 
 
 def test_munge_fields():
@@ -23,4 +23,4 @@ def test_munge_fields():
               [{'status': 200, 'url': 'http://example.com/'}]),)
 
     for fields, lines, ret in tests:
-        assert cdx_toolkit.munge_fields(fields, lines) == ret
+        assert cdx_toolkit_async.munge_fields(fields, lines) == ret

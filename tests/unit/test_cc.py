@@ -1,8 +1,8 @@
 import unittest.mock as mock
 import pytest
 
-import cdx_toolkit.commoncrawl
-from cdx_toolkit.timeutils import timestamp_to_time
+import cdx_toolkit_async.commoncrawl
+from cdx_toolkit_async.timeutils import timestamp_to_time
 
 # useful for debugging:
 import logging
@@ -34,7 +34,7 @@ def test_apply_cc_defaults():
 
     for test_in, test_out in tests:
         test_out.update(test_in)
-        cdx_toolkit.commoncrawl.apply_cc_defaults(test_in, now=now)
+        cdx_toolkit_async.commoncrawl.apply_cc_defaults(test_in, now=now)
         assert test_in == test_out
 
 
@@ -52,7 +52,7 @@ my_cc_endpoints = [
 
 
 def test_make_cc_maps():
-    cc_map, cc_times = cdx_toolkit.commoncrawl.make_cc_maps(my_cc_endpoints)
+    cc_map, cc_times = cdx_toolkit_async.commoncrawl.make_cc_maps(my_cc_endpoints)
     t = cc_times[0]
     assert cc_map[t] == 'https://index.commoncrawl.org/CC-MAIN-2008-2009-index'
     t = cc_times[-1]
@@ -68,11 +68,11 @@ def test_check_cc_from_to():
     ]
     for params in params_that_raise:
         with pytest.raises(ValueError):
-            cdx_toolkit.commoncrawl.check_cc_from_to(params)
+            cdx_toolkit_async.commoncrawl.check_cc_from_to(params)
 
 
 def test_bisect_cc():
-    cc_map, cc_times = cdx_toolkit.commoncrawl.make_cc_maps(my_cc_endpoints)
+    cc_map, cc_times = cdx_toolkit_async.commoncrawl.make_cc_maps(my_cc_endpoints)
 
     tests = [
         #[(from, to), (first, last, count)],
@@ -91,18 +91,19 @@ def test_bisect_cc():
         i_to = 'https://index.commoncrawl.org/CC-MAIN-{}-index'.format(t[1][1])
         i_count = t[1][2]
 
-        index_list = cdx_toolkit.commoncrawl.bisect_cc(cc_map, cc_times, from_ts_t, to_t)
+        index_list = cdx_toolkit_async.commoncrawl.bisect_cc(cc_map, cc_times, from_ts_t, to_t)
         assert index_list[0] == i_from, 'test: '+repr(t)
         assert index_list[-1] == i_to, 'test: '+repr(t)
         assert len(index_list) == i_count
 
-        index_list = cdx_toolkit.commoncrawl.bisect_cc(cc_map, cc_times, from_ts_t, None)
+        index_list = cdx_toolkit_async.commoncrawl.bisect_cc(cc_map, cc_times, from_ts_t, None)
         assert index_list[0] == i_from, 'test: '+repr(t)
         assert index_list[-1] == i_last, 'test: '+repr(t)
         assert len(index_list) >= i_count
 
 
-def test_customize_index_list():
+@pytest.mark.asyncio
+async def test_customize_index_list():
     tests = [
         #[(from, to), (first, last, count)],
 
@@ -121,17 +122,20 @@ def test_customize_index_list():
         [('20180430', '20100429'), ()],
     ]
 
-    with mock.patch('cdx_toolkit.get_cc_endpoints', return_value=my_cc_endpoints):
-        cdx = cdx_toolkit.CDXFetcher(source='cc')
-        cdxa = cdx_toolkit.CDXFetcher(source='cc', cc_sort='ascending')
-        cdxb = cdx_toolkit.CDXFetcher(source='cc', cc_sort='invalid', loglevel='DEBUG')
+    with mock.patch('cdx_toolkit_async.get_cc_endpoints', return_value=my_cc_endpoints):
+        cdx = cdx_toolkit_async.CDXFetcher(source='cc')
+        await cdx.prepare()
+        cdxa = cdx_toolkit_async.CDXFetcher(source='cc', cc_sort='ascending')
+        await cdxa.prepare()
+        cdxb = cdx_toolkit_async.CDXFetcher(source='cc', cc_sort='invalid', loglevel='DEBUG')
+        await cdxb.prepare()
 
         for t in tests:
             params = {
                 'from_ts': t[0][0],
                 'to': t[0][1],
             }
-            cdx_toolkit.commoncrawl.apply_cc_defaults(params)
+            cdx_toolkit_async.commoncrawl.apply_cc_defaults(params)
 
             with pytest.raises(ValueError):
                 index_list = cdxb.customize_index_list(params)
@@ -157,15 +161,17 @@ def test_customize_index_list():
             assert len(index_lista) == i_count
 
 
-def test_customize_index_list_closest():
+@pytest.mark.asyncio
+async def test_customize_index_list_closest():
     tests = [
         [('201801', '20171230', None), ('2018-13', '2017-51', 4)],
         [('201803', '20180214', None), ('2018-13', '2018-05', 3)],
         [('201801', '20171230', '201802'), ('2018-05', '2017-51', 2)],
     ]
 
-    with mock.patch('cdx_toolkit.get_cc_endpoints', return_value=my_cc_endpoints):
-        cdx = cdx_toolkit.CDXFetcher(source='cc')
+    with mock.patch('cdx_toolkit_async.get_cc_endpoints', return_value=my_cc_endpoints):
+        cdx = cdx_toolkit_async.CDXFetcher(source='cc')
+        await cdx.prepare()
 
         for t in tests:
             params = {
@@ -173,7 +179,7 @@ def test_customize_index_list_closest():
                 'from_ts': t[0][1],
                 'to': t[0][2],
             }
-            cdx_toolkit.commoncrawl.apply_cc_defaults(params)
+            cdx_toolkit_async.commoncrawl.apply_cc_defaults(params)
 
             index_list = cdx.customize_index_list(params)
 

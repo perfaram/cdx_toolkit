@@ -125,12 +125,13 @@ class CaptureObject(MutableMapping):
         self._content = rec.content_stream().read()
         return self._content
 
-    @property
-    def text(self):
+    #@property
+    async def text(self):
         '''
         Eventually this function will do something with the character set, but not yet.
         '''
-        return self.content.decode('utf-8', errors='replace')
+        content = await self.content()
+        return content.decode('utf-8', errors='replace')
 
     # the remaining code treats self.data like a dict
 
@@ -294,7 +295,7 @@ class CDXFetcher:
 
     def items(self, url, **kwargs):  # pragma: no cover
         warnings.warn(
-            'cdx.items() has been renamed to cdx.iter() and will be removed in cdx_toolkit 1.0',
+            'cdx.items() has been renamed to cdx.iter() and will be removed in cdx_toolkit_async 1.0',
             FutureWarning
         )
         return self.iter(url, **kwargs)

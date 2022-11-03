@@ -1,4 +1,4 @@
-from cdx_toolkit.cli import main
+from cdx_toolkit_async.cli import main_a
 
 import json
 import sys
@@ -7,9 +7,10 @@ import pytest
 import requests
 
 
-def test_basics(capsys):
+@pytest.mark.asyncio
+async def test_basics(capsys):
     args = '--cc --limit 10 iter commoncrawl.org/*'.split()
-    main(args=args)
+    await main_a(args=args)
     out, err = capsys.readouterr()
 
     split = out.splitlines()
@@ -19,7 +20,7 @@ def test_basics(capsys):
         assert 'commoncrawl.org' in line
 
 
-def multi_helper(t, capsys, caplog):
+async def multi_helper(t, capsys, caplog):
     inputs = t[0]
     outputs = t[1]
     cmdline = '{} {} {} {}'.format(inputs['service'], inputs['mods'], inputs['cmd'], inputs['rest'])
@@ -27,9 +28,9 @@ def multi_helper(t, capsys, caplog):
 
     if 'exception' in outputs:
         with pytest.raises(outputs['exception']):
-            main(args=args)
+            await main_a(args=args)
     else:
-        main(args=args)
+        await main_a(args=args)
 
     out, err = capsys.readouterr()
 
@@ -54,7 +55,8 @@ def multi_helper(t, capsys, caplog):
         assert len(caplog.records) > outputs['debug'], cmdline
 
 
-def test_multi_cc1(capsys, caplog):
+@pytest.mark.asyncio
+async def test_multi_cc1(capsys, caplog):
     tests = [
         [{'service': '--cc', 'mods': '--limit 10', 'cmd': 'iter', 'rest': 'commoncrawl.org/*'},
          {'count': 10, 'linefgrep': 'commoncrawl.org'}],
@@ -79,10 +81,11 @@ def test_multi_cc1(capsys, caplog):
     ]
 
     for t in tests:
-        multi_helper(t, capsys, caplog)
+        await multi_helper(t, capsys, caplog)
 
 
-def test_multi_cc2(capsys, caplog):
+@pytest.mark.asyncio
+async def test_multi_cc2(capsys, caplog):
     tests = [
         [{'service': '--cc', 'mods': '--limit 3 --get --closest=20170615', 'cmd': 'iter', 'rest': 'commoncrawl.org/*'},
          {'count': 3, 'linefgrep': 'timestamp 20170'}],  # data-dependent, and kinda broken
@@ -100,10 +103,11 @@ def test_multi_cc2(capsys, caplog):
     ]
 
     for t in tests:
-        multi_helper(t, capsys, caplog)
+        await multi_helper(t, capsys, caplog)
 
 
-def test_multi_ia(capsys, caplog):
+@pytest.mark.asyncio
+async def test_multi_ia(capsys, caplog):
     tests = [
         [{'service': '--ia', 'mods': '--limit 10', 'cmd': 'iter', 'rest': 'commoncrawl.org/*'},
          {'count': 10, 'linefgrep': 'commoncrawl.org'}],
@@ -118,10 +122,11 @@ def test_multi_ia(capsys, caplog):
     ]
 
     for t in tests:
-        multi_helper(t, capsys, caplog)
+        await multi_helper(t, capsys, caplog)
 
 
-def test_multi_rest(capsys, caplog):
+@pytest.mark.asyncio
+async def test_multi_rest(capsys, caplog):
     tests = [
         [{'service': '--source https://web.archive.org/cdx/search/cdx', 'mods': '--limit 10', 'cmd': 'iter', 'rest': 'commoncrawl.org/*'},
          {'count': 10, 'linefgrep': 'commoncrawl.org'}],
@@ -146,10 +151,11 @@ def test_multi_rest(capsys, caplog):
     ]
 
     for t in tests:
-        multi_helper(t, capsys, caplog)
+        await multi_helper(t, capsys, caplog)
 
 
-def test_warc(tmpdir, caplog):
+@pytest.mark.asyncio
+async def test_warc(tmpdir, caplog):
     # crash testing only, so far
 
     base = ' --limit 10 warc commoncrawl.org/*'
@@ -166,23 +172,24 @@ def test_warc(tmpdir, caplog):
             cmdline = p + base
             print(cmdline, file=sys.stderr)
             args = cmdline.split()
-            main(args=args)
+            await main_a(args=args)
 
         for s in suffixes:
             cmdline = prefixes[0] + base + ' ' + s
             print(cmdline, file=sys.stderr)
             args = cmdline.split()
-            main(args=args)
+            await main_a(args=args)
 
         assert True
 
 
-def one_ia_corner(tmpdir, cmdline):
+async def one_ia_corner(tmpdir, cmdline):
     with tmpdir.as_cwd():
-        main(args=cmdline.split())
+        await main_a(args=cmdline.split())
 
 
-def test_warc_ia_corners(tmpdir, caplog):
+@pytest.mark.asyncio
+async def test_warc_ia_corners(tmpdir, caplog):
     '''
     To test these more properly, need to add a --exact-warcname and then postprocess.
     For now, these tests show up in the coverage report
@@ -190,16 +197,16 @@ def test_warc_ia_corners(tmpdir, caplog):
 
     # revisit vivification
     cmdline = '--ia --from 2017010118350 --to 2017010118350 warc pbm.com/robots.txt'
-    one_ia_corner(tmpdir, cmdline)
+    await one_ia_corner(tmpdir, cmdline)
 
     # same-surt same-timestamp redir+200
     cmdline = '--ia --from 20090220001146 --to 20090220001146 warc pbm.com'
-    one_ia_corner(tmpdir, cmdline)
+    await one_ia_corner(tmpdir, cmdline)
 
     # any redir -> 302, this is a 301
     cmdline = '--ia --from 2011020713024 --to 2011020713024 warc pbm.com'
-    one_ia_corner(tmpdir, cmdline)
+    await one_ia_corner(tmpdir, cmdline)
 
     # warcing a 404 is a corner case in myrequests
     cmdline = '--ia --from 20080512074145 --to 20080512074145 warc http://www.pbm.com/oly/archive/design94/0074.html'
-    one_ia_corner(tmpdir, cmdline)
+    await one_ia_corner(tmpdir, cmdline)

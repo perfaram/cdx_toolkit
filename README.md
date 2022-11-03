@@ -1,18 +1,18 @@
-# cdx_toolkit
+# cdx_toolkit_async
 
-[![Build Status](https://dev.azure.com/cocrawler/cdx_toolkit/_apis/build/status/cocrawler.cdx_toolkit?branchName=main)](https://dev.azure.com/cocrawler/cdx_toolkit/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/cocrawler/cdx_toolkit/badge.svg?branch=main)](https://coveralls.io/github/cocrawler/cdx_toolkit?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/cocrawler/cdx_toolkit.svg)](LICENSE)
+[![Build Status](https://dev.azure.com/cocrawler/cdx_toolkit_async/_apis/build/status/cocrawler.cdx_toolkit_async?branchName=main)](https://dev.azure.com/cocrawler/cdx_toolkit_async/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/cocrawler/cdx_toolkit_async/badge.svg?branch=main)](https://coveralls.io/github/cocrawler/cdx_toolkit_async?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/cocrawler/cdx_toolkit_async.svg)](LICENSE)
 
-cdx_toolkit is a set of tools for working with CDX indices of web
+cdx_toolkit_async is a set of tools for working with CDX indices of web
 crawls and archives, including those at CommonCrawl and the Internet
 Archive's Wayback Machine.
 
 CommonCrawl uses Ilya Kreymer's pywb to serve the CDX API, which is
-somewhat different from the Internet Archive's CDX API server. cdx_toolkit
-hides these differences as best it can. cdx_toolkit also knits
+somewhat different from the Internet Archive's CDX API server. cdx_toolkit_async
+hides these differences as best it can. cdx_toolkit_async also knits
 together the monthly Common Crawl CDX indices into a single, virtual
 index.
 
-Finally, cdx_toolkit allows extracting archived pages from CC and IA
+Finally, cdx_toolkit_async allows extracting archived pages from CC and IA
 into WARC files.  If you're looking to create subsets of CC or IA data
 and then process them into WET or WAT files, this is a feature you'll
 find useful.
@@ -22,7 +22,7 @@ find useful.
 cdx toolkit requires Python 3.
 
 ```
-$ pip install cdx_toolkit
+$ pip install cdx_toolkit_async
 ```
 
 or clone this repo and use `python ./setup.py install`.
@@ -60,9 +60,9 @@ Add -v (or -vv) to see what's going on under the hood.
 ## Programming example
 
 ```
-import cdx_toolkit
+import cdx_toolkit_async
 
-cdx = cdx_toolkit.CDXFetcher(source='cc')
+cdx = cdx_toolkit_async.CDXFetcher(source='cc')
 url = 'commoncrawl.org/*'
 
 print(url, 'size estimate', cdx.get_size_estimate(url))
@@ -81,7 +81,7 @@ commoncrawl.org/* size estimate 36000
 You can also fetch the content of the web capture as bytes:
 
 ```
-    print(obj.content)
+    print(await obj.content())
 ```
 
 There's a full example of iterating and selecting a subset of captures
@@ -94,7 +94,7 @@ Filters can be used to limit captures to a subset of the results.
 Any field name listed in `cdxt iter --all-fields` can be used in a
 filter.  These field names are appropriately renamed if the source is
 'ia'.  The different syntax of filter modifiers for 'ia' and 'cc' is
-not fully abstracted away by cdx_toolkit.
+not fully abstracted away by cdx_toolkit_async.
 
 The basic syntax of a filter is `[modifier]field:expression`, for
 example `=status:200` or `!=status:200`.
@@ -124,7 +124,7 @@ for full details of filter modifiers.
 
 ## CDX Jargon, Field Names, and such
 
-cdx_toolkit supports all (ok, most!) of the options and fields discussed
+cdx_toolkit_async supports all (ok, most!) of the options and fields discussed
 in the CDX API documentation:
 
 * https://github.com/webrecorder/pywb/wiki/CDX-Server-API
@@ -168,8 +168,8 @@ captures after the filter is applied. Note that revisit records have a
 status of '-', not 200.
 
 CDX API servers support a **paged interface** for efficient access to
-large sets of URLs. cdx_toolkit iterators always use the paged interface.
-cdx_toolkit is also polite to CDX servers by being single-threaded and
+large sets of URLs. cdx_toolkit_async iterators always use the paged interface.
+cdx_toolkit_async is also polite to CDX servers by being single-threaded and
 serial. If it's not fast enough for you, consider downloading Common
 Crawl's index files directly.
 
@@ -177,17 +177,17 @@ A **digest** is a sha1 checksum of the contents of a capture. The
 purpose of a digest is to be able to easily figure out if 2 captures
 have identical content.
 
-Common Crawl publishes a new index each month. cdx_toolkit will start
+Common Crawl publishes a new index each month. cdx_toolkit_async will start
 using new ones as soon as they are published. **By default,
-cdx_toolkit will use the most recent 12 months of Common Crawl**; you
+cdx_toolkit_async will use the most recent 12 months of Common Crawl**; you
 can change that using **--from** or **from_ts=** and **--to** or
 **to=**.
 
 CDX implementations do not efficiently support reversed sort orders,
-so cdx_toolkit results will be ordered by ascending SURT and by
+so cdx_toolkit_async results will be ordered by ascending SURT and by
 ascending timestamp. However, since CC has an individual index for
 each month, and because most users want more recent results,
-cdx_toolkit defaults to querying CC's CDX indices in decreasing month
+cdx_toolkit_async defaults to querying CC's CDX indices in decreasing month
 order, but each month's result will be in ascending SURT and ascending
 timestamp. This default sort order is named 'mixed'. If you'd like
 pure ascending, set **--cc-sort** or **cc_sort=** to 'ascending'. You
@@ -214,7 +214,7 @@ instead of a partial one.
 
 ## Status
 
-cdx_toolkit has reached the beta-testing stage of development.
+cdx_toolkit_async has reached the beta-testing stage of development.
 
 ## License
 

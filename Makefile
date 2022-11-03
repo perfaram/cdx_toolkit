@@ -8,18 +8,18 @@ init:
 	pip install --use-feature=in-tree-build .
 
 unit:
-	PYTHONPATH=. py.test --doctest-modules cdx_toolkit tests/unit -v -v
+	PYTHONPATH=. py.test --doctest-modules cdx_toolkit_async tests/unit -v -v
 
 test:
-	PYTHONPATH=. py.test --doctest-modules cdx_toolkit tests -v -v
+	PYTHONPATH=. py.test --doctest-modules cdx_toolkit_async tests -v -v
 	PYTHONPATH=. examples/iter-and-warc.py
 
 clean_coverage:
 	rm -f .coverage
 
 test_coverage: clean_coverage
-	PYTHONPATH=. coverage run -a --source=cdx_toolkit,examples examples/iter-and-warc.py
-	PYTHONPATH=. py.test --doctest-modules --cov-report=xml --cov-append --cov cdx_toolkit tests -v -v
+	PYTHONPATH=. coverage run -a --source=cdx_toolkit_async,examples examples/iter-and-warc.py
+	PYTHONPATH=. py.test --doctest-modules --cov-report=xml --cov-append --cov cdx_toolkit_async tests -v -v
 	coverage report
 
 distclean:

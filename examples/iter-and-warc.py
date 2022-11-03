@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import cdx_toolkit
+import cdx_toolkit_async
 import asyncio
 
 warcinfo = {
-    'software': 'pypi_cdx_toolkit iter-and-warc example',
+    'software': 'pypi_cdx_toolkit_async iter-and-warc example',
     'isPartOf': 'EXAMPLE-COMMONCRAWL',
     'description': 'warc extraction',
     'format': 'WARC file version 1.0',
@@ -13,10 +13,10 @@ warcinfo = {
 url = 'commoncrawl.org/*'
 
 async def main(url, warcinfo):
-    cdx = cdx_toolkit.CDXFetcher(source='cc')
+    cdx = cdx_toolkit_async.CDXFetcher(source='cc')
     await cdx.prepare()
 
-    writer = cdx_toolkit.warc.get_writer('EXAMPLE', 'COMMONCRAWL', warcinfo, warc_version='1.1')
+    writer = cdx_toolkit_async.warc.get_writer('EXAMPLE', 'COMMONCRAWL', warcinfo, warc_version='1.1')
 
     async for obj in cdx.iter(url, limit=10):
         url = obj['url']
@@ -38,7 +38,7 @@ async def main(url, warcinfo):
         print(' wrote', url)
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     tasks = [
         loop.create_task(main(url, warcinfo)),
     ]

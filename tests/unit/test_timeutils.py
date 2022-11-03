@@ -1,6 +1,6 @@
 import pytest
 
-import cdx_toolkit.timeutils as timeutils
+import cdx_toolkit_async.timeutils as timeutils
 
 
 def test_padding():

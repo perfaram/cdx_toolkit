@@ -36,7 +36,7 @@ def fake_wb_warc(url, wb_url, resp, capture):
     Given a playback from a wayback, fake up a warc response record
     '''
     status_code = resp.status_code
-    status_reason = resp.reason
+    status_reason = resp.reason_phrase
 
     if str(status_code) != capture['status']:
         url = capture['url']

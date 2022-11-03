@@ -36,7 +36,7 @@ def myrequests_get_prepare_params(params=None, headers=None):
     if headers is None:
         headers = {}
     if 'user-agent' not in headers:
-        headers['User-Agent'] = 'pypi_cdx_toolkit/'+__version__
+        headers['User-Agent'] = 'pypi_cdx_toolkit_async/'+__version__
 
     return params, headers
 
@@ -61,7 +61,7 @@ def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False
             LOGGER.info('retrying after 1s for %d', resp.status_code)
             if resp.text:
                 LOGGER.info('response body is %s', resp.text)
-        anyio.sleep(1)
+        await anyio.sleep(1)
         return True, retries
     if resp.status_code in {400, 404}:  # pragma: no cover
         if resp.text:
@@ -84,7 +84,7 @@ def myrequests_get_handle_error(e, connect_errors, url, params):
     if connect_errors > 10:
         LOGGER.warning(string)
     LOGGER.info('retrying after 1s for '+str(e))
-    anyio.sleep(1)
+    await anyio.sleep(1)
     return connect_errors
 
 def myrequests_get_update_seen_hostnames(url):

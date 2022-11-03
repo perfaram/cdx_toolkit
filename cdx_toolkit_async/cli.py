@@ -4,14 +4,24 @@ import csv
 import sys
 import json
 import os
+import asyncio
 
-import cdx_toolkit
+import cdx_toolkit_async
 
 LOGGER = logging.getLogger(__name__)
 
 
 def main(args=None):
-    parser = ArgumentParser(description='cdx_toolkit iterator command line tool')
+    loop = asyncio.new_event_loop()
+    tasks = [
+        loop.create_task(main_a(args)),
+    ]
+    loop.run_until_complete(asyncio.wait(tasks))
+    loop.close()
+
+
+async def main_a(args):
+    parser = ArgumentParser(description='cdx_toolkit_async iterator command line tool')
 
     parser.add_argument('--version', '-V', action='version', version=get_version())
     parser.add_argument('--verbose', '-v', action='count', help='set logging level to INFO (-v) or DEBUG (-vv)')
@@ -68,7 +78,8 @@ def main(args=None):
             cmdline = 'cdxt'
     cmd = parser.parse_args(args=args)
     set_loglevel(cmd)
-    cmd.func(cmd, cmdline)
+
+    await cmd.func(cmd, cmdline)
 
 
 def set_loglevel(cmd):
@@ -88,10 +99,10 @@ def set_loglevel(cmd):
 
 
 def get_version():
-    return cdx_toolkit.__version__
+    return cdx_toolkit_async.__version__
 
 
-def setup(cmd):
+async def setup(cmd):
     kwargs = {}
     kwargs['source'] = cmd.cc or cmd.ia or cmd.source or None
     if kwargs['source'] is None:
@@ -103,7 +114,8 @@ def setup(cmd):
     if getattr(cmd, 'warc_download_prefix', None) is not None:
         kwargs['warc_download_prefix'] = cmd.warc_download_prefix
 
-    cdx = cdx_toolkit.CDXFetcher(**kwargs)
+    cdx = cdx_toolkit_async.CDXFetcher(**kwargs)
+    await cdx.prepare()
 
     kwargs = {}
     if cmd.limit:
@@ -145,8 +157,8 @@ def print_line(cmd, writer, printme):
         print(', '.join([' '.join((k, printme[k])) for k in sorted(printme.keys())]))
 
 
-def iterator(cmd, cmdline):
-    cdx, kwargs = setup(cmd)
+async def iterator(cmd, cmdline):
+    cdx, kwargs = await setup(cmd)
     fields = set(cmd.fields.split(','))
     if cmd.csv:
         writer = csv.DictWriter(sys.stdout, fieldnames=sorted(list(fields)))
@@ -155,26 +167,26 @@ def iterator(cmd, cmdline):
         writer = None
 
     if cmd.get:
-        objs = cdx.get(cmd.url, **kwargs)
+        objs = await cdx.get(cmd.url, **kwargs)
         for obj in objs:
             printme = winnow_fields(cmd, fields, obj)
             print_line(cmd, writer, printme)
         return
 
-    for obj in cdx.iter(cmd.url, **kwargs):
+    async for obj in cdx.iter(cmd.url, **kwargs):
         printme = winnow_fields(cmd, fields, obj)
         print_line(cmd, writer, printme)
 
 
-def warcer(cmd, cmdline):
-    cdx, kwargs = setup(cmd)
+async def warcer(cmd, cmdline):
+    cdx, kwargs = await setup(cmd)
 
     ispartof = cmd.prefix
     if cmd.subprefix:
         ispartof += '-' + cmd.subprefix
 
     info = {
-        'software': 'pypi_cdx_toolkit/'+get_version(),
+        'software': 'pypi_cdx_toolkit_async/'+get_version(),
         'isPartOf': ispartof,
         'description': 'warc extraction generated with: '+cmdline,
         'format': 'WARC file version 1.0',  # todo: if we directly read a warc, have this match the warc
@@ -189,9 +201,9 @@ def warcer(cmd, cmdline):
         kwargs_writer['size'] = kwargs['size']
         del kwargs['size']
 
-    writer = cdx_toolkit.warc.get_writer(cmd.prefix, cmd.subprefix, info, **kwargs_writer)
+    writer = cdx_toolkit_async.warc.get_writer(cmd.prefix, cmd.subprefix, info, **kwargs_writer)
 
-    for obj in cdx.iter(cmd.url, **kwargs):
+    async for obj in cdx.iter(cmd.url, **kwargs):
         url = obj['url']
         if cmd.url_fgrep and cmd.url_fgrep not in url:
             LOGGER.debug('not warcing due to fgrep: %s', url)
@@ -201,7 +213,7 @@ def warcer(cmd, cmdline):
             continue
         timestamp = obj['timestamp']
         try:
-            record = obj.fetch_warc_record()
+            record = await obj.fetch_warc_record()
         except RuntimeError:  # pragma: no cover
             LOGGER.warning('skipping capture for RuntimeError 404: %s %s', url, timestamp)
             continue
@@ -210,8 +222,8 @@ def warcer(cmd, cmdline):
         writer.write_record(record)
 
 
-def sizer(cmd, cmdline):
-    cdx, kwargs = setup(cmd)
+async def sizer(cmd, cmdline):
+    cdx, kwargs = await setup(cmd)
 
-    size = cdx.get_size_estimate(cmd.url, **kwargs)
+    size = await cdx.get_size_estimate(cmd.url, **kwargs)
     print(size)

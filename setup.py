@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 packages = [
-    'cdx_toolkit',
+    'cdx_toolkit_async',
 ]
 
 # remember: keep requires synchronized with requirements.txt
@@ -20,8 +20,6 @@ extras_require = {
     'test': test_requirements,  # setup no longer tests, so make them an extra
     'package': package_requirements,
 }
-
-scripts = ['scripts/cdx_size', 'scripts/cdx_iter']
 
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
@@ -42,11 +40,9 @@ setup(
     setup_requires=['setuptools-scm'],
     install_requires=requires,
     entry_points='''
-        [console_scripts]
-        cdxt = cdx_toolkit.cli:main
-        #ccathena = cdx_toolkit.cli:main_athena
+        cdxt = cdx_toolkit_async.cli:main
+        #ccathena = cdx_toolkit_async.cli:main_athena
     ''',
-    scripts=scripts,
     license='Apache 2.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
