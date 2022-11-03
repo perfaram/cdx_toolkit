@@ -1,8 +1,10 @@
 # cdx_toolkit_async
 
-[![Build Status](https://dev.azure.com/cocrawler/cdx_toolkit_async/_apis/build/status/cocrawler.cdx_toolkit_async?branchName=main)](https://dev.azure.com/cocrawler/cdx_toolkit_async/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/cocrawler/cdx_toolkit_async/badge.svg?branch=main)](https://coveralls.io/github/cocrawler/cdx_toolkit_async?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/cocrawler/cdx_toolkit_async.svg)](LICENSE)
+> This is an async version of [cocrawler/cdx_toolkit](https://github.com/cocrawler/cdx_toolkit). 
 
-cdx_toolkit_async is a set of tools for working with CDX indices of web
+[![Build Status](https://dev.azure.com/perfaram/cdx_toolkit_async/_apis/build/status/cocrawler.cdx_toolkit_async?branchName=main)](https://dev.azure.com/perfaram/cdx_toolkit_async/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/perfaram/cdx_toolkit_async/badge.svg?branch=main)](https://coveralls.io/github/perfaram/cdx_toolkit_async?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/perfaram/cdx_toolkit_async.svg)](LICENSE)
+
+cdx_toolkit_async is a Python 3 package for working with CDX indices of web
 crawls and archives, including those at CommonCrawl and the Internet
 Archive's Wayback Machine.
 
@@ -17,15 +19,16 @@ into WARC files.  If you're looking to create subsets of CC or IA data
 and then process them into WET or WAT files, this is a feature you'll
 find useful.
 
+cdx_toolkit_async is just an async version of 
+[cocrawler/cdx_toolkit](https://github.com/cocrawler/cdx_toolkit), a feature
+that comes in handy when you need to make multiple requests in parallel – letting
+you be completely IO-bound. The CLI is, for now, exactly the same; the Python interface
+differs in that methods possibly making network requests are now `async`.
+
 ## Installing
 
-cdx toolkit requires Python 3.
-
-```
-$ pip install cdx_toolkit_async
-```
-
-or clone this repo and use `python ./setup.py install`.
+cdx_toolkit_async requires Python 3. For now, it is not published on PyPi – you have to 
+clone this repo and use `python ./setup.py install`.
 
 ## Command-line tools
 
@@ -62,12 +65,14 @@ Add -v (or -vv) to see what's going on under the hood.
 ```
 import cdx_toolkit_async
 
+# in an async method
 cdx = cdx_toolkit_async.CDXFetcher(source='cc')
+await cdx.prepare()
 url = 'commoncrawl.org/*'
 
 print(url, 'size estimate', cdx.get_size_estimate(url))
 
-for obj in cdx.iter(url, limit=1):
+async for obj in cdx.iter(url, limit=1):
     print(obj)
 ```
 
@@ -219,6 +224,7 @@ cdx_toolkit_async has reached the beta-testing stage of development.
 ## License
 
 Copyright 2018-2020 Greg Lindahl and others
+Copyright 2022 Perceval Faramaz and others
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this software except in compliance with the License.
