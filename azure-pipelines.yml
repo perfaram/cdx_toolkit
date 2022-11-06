@@ -37,7 +37,7 @@ jobs:
           echo "Note: using 3.6 because packages are deprecating 3.5 support"
           pip install -r requirements.txt
         fi
-        pip --use-feature=in-tree-build install . .[test]
+        pip install . .[test]
       displayName: 'Install dependencies'
 
     - script: |
