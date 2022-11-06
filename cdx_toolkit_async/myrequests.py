@@ -67,6 +67,8 @@ async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404
         if resp.text:
             LOGGER.info('response body is %s', resp.text)
         raise RuntimeError('invalid url of some sort, status={} {}'.format(resp.status_code, url))
+    if 300 <= resp.status_code and resp.status_code < 400:
+        return False, retries
     resp.raise_for_status()
     return False, retries
 
