@@ -7,11 +7,6 @@ jobs:
       vmImage: 'ubuntu-latest'
     strategy:
       matrix:
-        Python36:
-          python.version: '3.6'
-        Python36debug:
-          python.version: '3.6'
-          myenv: LOGLEVEL=DEBUG EXACT_PIP_VERSIONS=1
         Python37:
           python.version: '3.7'
         Python38:
@@ -74,7 +69,7 @@ jobs:
 
     - script: |
         python -m pip install --upgrade pip
-        pip --use-feature=in-tree-build install . .[test]
+        pip install . .[test]
       displayName: 'Install dependencies'
 
     - script: |
