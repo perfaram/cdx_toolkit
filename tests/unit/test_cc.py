@@ -1,5 +1,7 @@
 import unittest.mock as mock
+from unittest.mock import AsyncMock
 import pytest
+import asyncio
 
 import cdx_toolkit_async.commoncrawl
 from cdx_toolkit_async.timeutils import timestamp_to_time
@@ -122,7 +124,7 @@ async def test_customize_index_list():
         [('20180430', '20100429'), ()],
     ]
 
-    with mock.patch('cdx_toolkit_async.get_cc_endpoints', return_value=my_cc_endpoints):
+    with mock.patch('cdx_toolkit_async.get_cc_endpoints', side_effect=AsyncMock(return_value=my_cc_endpoints)):
         cdx = cdx_toolkit_async.CDXFetcher(source='cc')
         await cdx.prepare()
         cdxa = cdx_toolkit_async.CDXFetcher(source='cc', cc_sort='ascending')
@@ -169,7 +171,7 @@ async def test_customize_index_list_closest():
         [('201801', '20171230', '201802'), ('2018-05', '2017-51', 2)],
     ]
 
-    with mock.patch('cdx_toolkit_async.get_cc_endpoints', return_value=my_cc_endpoints):
+    with mock.patch('cdx_toolkit_async.get_cc_endpoints', side_effect=AsyncMock(return_value=my_cc_endpoints)):
         cdx = cdx_toolkit_async.CDXFetcher(source='cc')
         await cdx.prepare()
 
