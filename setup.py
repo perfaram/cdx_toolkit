@@ -40,6 +40,7 @@ setup(
     setup_requires=['setuptools-scm'],
     install_requires=requires,
     entry_points='''
+        [console_scripts]
         cdxt = cdx_toolkit_async.cli:main
         #ccathena = cdx_toolkit_async.cli:main_athena
     ''',
