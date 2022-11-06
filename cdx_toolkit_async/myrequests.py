@@ -40,7 +40,7 @@ def myrequests_get_prepare_params(params=None, headers=None):
 
     return params, headers
 
-def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False):
+async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False):
     if cdx and resp.status_code in {400, 404}:
         # 400: ia html error page -- probably page= is too big -- not an error
         # 404: pywb {'error': 'No Captures found for: www.pbxxxxxxm.com/*'} -- not an error
@@ -70,7 +70,7 @@ def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False
     resp.raise_for_status()
     return False, retries
 
-def myrequests_get_handle_error(e, connect_errors, url, params):
+async def myrequests_get_handle_error(e, connect_errors, url, params):
     connect_errors += 1
     string = '{} failures for url {} {!r}: {}'.format(connect_errors, url, params, str(e))
 
@@ -105,13 +105,13 @@ async def myrequests_get(url, session=None, params=None, headers=None, cdx=False
             LOGGER.debug('getting %s %r', url, params)
             resp = await session.get(url, params=params, headers=headers,
                                 timeout=(30., 30.), follow_redirects=False)
-            retry, retries = myrequests_get_handle_response(resp, retries, cdx, allow404)
+            retry, retries = await myrequests_get_handle_response(resp, retries, cdx, allow404)
             if not retry:
                 break
             else:
                 continue
         except (httpx.TransportError, httpx.DecodingError) as e:
-            connect_errors = myrequests_get_handle_error(e, connect_errors, url, params)
+            connect_errors = await myrequests_get_handle_error(e, connect_errors, url, params)
         except httpx.HTTPError as e:  # pragma: no cover
             LOGGER.warning('something unexpected happened, giving up after %s', str(e))
             raise
