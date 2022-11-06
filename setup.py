@@ -12,7 +12,7 @@ packages = [
 # remember: keep requires synchronized with requirements.txt
 requires = ['httpx', 'anyio', 'warcio']
 
-test_requirements = ['pytest', 'pytest-cov', 'coveralls']
+test_requirements = ['pytest', 'pytest-asyncio', 'pytest-cov', 'coveralls']
 
 package_requirements = ['twine', 'setuptools', 'setuptools-scm']
 
