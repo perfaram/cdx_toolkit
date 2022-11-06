@@ -2,7 +2,7 @@
 
 > This is an async version of [cocrawler/cdx_toolkit](https://github.com/cocrawler/cdx_toolkit). 
 
-[![Build Status](https://dev.azure.com/perfaram/cdx_toolkit_async/_apis/build/status/cocrawler.cdx_toolkit_async?branchName=main)](https://dev.azure.com/perfaram/cdx_toolkit_async/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/perfaram/cdx_toolkit_async/badge.svg?branch=main)](https://coveralls.io/github/perfaram/cdx_toolkit_async?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/perfaram/cdx_toolkit_async.svg)](LICENSE)
+[![Build Status](https://dev.azure.com/perfaram/cdx_toolkit_async/_apis/build/status/perfaram.cdx_toolkit_async?branchName=main)](https://dev.azure.com/perfaram/cdx_toolkit_async/_build/latest?definitionId=1&branchName=main) [![Coverage](https://coveralls.io/repos/github/perfaram/cdx_toolkit_async/badge.svg?branch=main)](https://coveralls.io/github/perfaram/cdx_toolkit_async?branch=main) [![Apache License 2.0](https://img.shields.io/github/license/perfaram/cdx_toolkit_async.svg)](LICENSE)
 
 cdx_toolkit_async is a Python 3 package for working with CDX indices of web
 crawls and archives, including those at CommonCrawl and the Internet
