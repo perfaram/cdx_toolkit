@@ -114,6 +114,8 @@ async def fetch_wb_warc(capture, wb, session=None, modifier='id_'):
         # '-' is a revisit; it will 404 if the underlying record is a 404
         # (also has 'mime': 'warc/revisit')
         kwargs['allow404'] = True
+    else:
+        kwargs["expect_status"] = int(status)
 
     resp = await myrequests_get(wb_url, session=session, **kwargs)
 

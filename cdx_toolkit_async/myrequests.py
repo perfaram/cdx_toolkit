@@ -40,13 +40,15 @@ def myrequests_get_prepare_params(params=None, headers=None):
 
     return params, headers
 
-async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False):
+async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404=False, expected_status=None):
     if cdx and resp.status_code in {400, 404}:
         # 400: ia html error page -- probably page= is too big -- not an error
         # 404: pywb {'error': 'No Captures found for: www.pbxxxxxxm.com/*'} -- not an error
         LOGGER.debug('giving up with status %d, no captures found', resp.status_code)
         return False, retries
     if allow404 and resp.status_code == 404:
+        return False, retries
+    if expected_status is not None and resp.status_code == expected_status:
         return False, retries
     if resp.status_code in {429, 500, 502, 503, 504, 509}:  # pragma: no cover
         # 503=slow down, 50[24] are temporary outages, 500=Amazon S3 generic error
@@ -66,7 +68,7 @@ async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404
     if resp.status_code in {400, 404}:  # pragma: no cover
         if resp.text:
             LOGGER.info('response body is %s', resp.text)
-        raise RuntimeError('invalid url of some sort, status={} {}'.format(resp.status_code, url))
+        raise RuntimeError('invalid url of some sort, status={} {}'.format(resp.status_code, resp.url))
     if 300 <= resp.status_code and resp.status_code < 400:
         return False, retries
     resp.raise_for_status()
@@ -94,7 +96,7 @@ def myrequests_get_update_seen_hostnames(url):
     if hostname not in previously_seen_hostnames:
         previously_seen_hostnames.add(hostname)
 
-async def myrequests_get(url, session=None, params=None, headers=None, cdx=False, allow404=False):
+async def myrequests_get(url, session=None, params=None, headers=None, cdx=False, allow404=False, expect_status=None):
     session = session if session else async_httpx_client.get()
 
     params, headers = myrequests_get_prepare_params(params=params, headers=headers)
@@ -107,7 +109,7 @@ async def myrequests_get(url, session=None, params=None, headers=None, cdx=False
             LOGGER.debug('getting %s %r', url, params)
             resp = await session.get(url, params=params, headers=headers,
                                 timeout=(30., 30.), follow_redirects=False)
-            retry, retries = await myrequests_get_handle_response(resp, retries, cdx, allow404)
+            retry, retries = await myrequests_get_handle_response(resp, retries, cdx, allow404, expect_status)
             if not retry:
                 break
             else:
