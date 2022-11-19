@@ -70,7 +70,7 @@ cdx = cdx_toolkit_async.CDXFetcher(source='cc')
 await cdx.prepare()
 url = 'commoncrawl.org/*'
 
-print(url, 'size estimate', cdx.get_size_estimate(url))
+print(url, 'size estimate', cdx.get_hitcount_estimate(url))
 
 async for obj in cdx.iter(url, limit=1):
     print(obj)

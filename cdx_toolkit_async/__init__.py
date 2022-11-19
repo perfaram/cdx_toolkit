@@ -171,7 +171,7 @@ class CDXFetcherIter:
             self.page += 1
 
             if self.page == 0 and len(self.index_list) > 0 and self.endpoint < len(self.index_list):
-                LOGGER.info('get_more: fetching cdx from %s', self.index_list[self.endpoint])
+                LOGGER.info('get_more: fetching cdx from %s on p%i', self.index_list[self.endpoint], self.page)
 
             status, objs = await self.cdxfetcher.get_for_iter(self.endpoint, self.page,
                                                         params=self.params, index_list=self.index_list)
@@ -231,7 +231,7 @@ class CDXFetcher:
         else:
             raise ValueError('could not understand source')
 
-        self.transport = AsyncProxyTransport.from_url(transport) if transport else None
+        self.transport = transport
         self.session = httpx.AsyncClient(transport=self.transport)
         async_httpx_client.set(self.session)
 
@@ -311,7 +311,9 @@ class CDXFetcher:
 
         endpoint = index_list[endpoint]
         params['page'] = page
+
         resp = await myrequests_get(endpoint, session=self.session, params=params, cdx=True)
+
         if resp.status_code == 400:  # pywb
             return 'last page', []
         if resp.text == '':  # ia
@@ -322,7 +324,7 @@ class CDXFetcher:
             params['limit'] -= len(ret)
         return 'ok', ret
 
-    async def get_size_estimate(self, url, as_pages=False, **kwargs):
+    async def get_hitcount_estimate(self, url, as_pages=False, **kwargs):
         '''
         Get the number of pages that match url
 

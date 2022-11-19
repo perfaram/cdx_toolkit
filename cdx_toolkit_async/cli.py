@@ -225,5 +225,5 @@ async def warcer(cmd, cmdline):
 async def sizer(cmd, cmdline):
     cdx, kwargs = await setup(cmd)
 
-    size = await cdx.get_size_estimate(cmd.url, **kwargs)
+    size = await cdx.get_hitcount_estimate(cmd.url, **kwargs)
     print(size)
