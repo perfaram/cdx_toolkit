@@ -54,12 +54,39 @@ def timestamp_to_time(ts):
             raise ValueError('cannot parse timestamp, is it a valid cdx timestamp?: '+ts) from None
 
 
+def timestamp_to_datetime(ts):
+    '''
+    >>> timestamp_to_datetime('1999')
+    datetime.datetime(1999, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+    '''
+    utc = datetime.timezone.utc
+    padded = pad_timestamp(ts)
+    try:
+        return datetime.datetime.strptime(padded, TIMESTAMP).replace(tzinfo=utc)
+    except ValueError:
+        # users may try to put a Unixtime in
+        # the web was born: 19890312 == 605664000
+        if ts.isdigit() and int(ts) > 605664000 and int(ts) < 1989031200:
+            LOGGER.error('hint: unixtime {} is cdx timestamp {}'.format(ts, time_to_timestamp(int(ts))))
+            raise ValueError('cannot parse timestamp, cdx timestamps are not unix timestamps: '+ts) from None
+        else:
+            raise ValueError('cannot parse timestamp, is it a valid cdx timestamp?: '+ts) from None
+
+
 def time_to_timestamp(t):
     '''
     >>> time_to_timestamp(915148800.0)
     '19990101000000'
     '''
     return datetime.datetime.fromtimestamp(t, tz=datetime.timezone.utc).strftime(TIMESTAMP)
+
+
+def datetime_to_timestamp(dt):
+    '''
+    >>> datetime_to_timestamp(datetime.datetime(1999, 1, 1, 0, 0, tzinfo=datetime.timezone.utc))
+    '19990101000000'
+    '''
+    return dt.strftime(TIMESTAMP)
 
 
 CC_TIMESTAMP = '%Y-%W-%w'
