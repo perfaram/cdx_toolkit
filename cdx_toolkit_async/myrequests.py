@@ -4,6 +4,20 @@ import logging
 import time
 import contextvars
 from urllib.parse import urlparse
+import httpcore
+
+specific_transport_error_types = []
+try:
+    import trio
+    specific_transport_error_types += [trio.BrokenResourceError]
+except:
+    pass
+
+try:
+    import python_socks
+    specific_transport_error_types += [python_socks._errors.ProxyTimeoutError, python_socks._errors.ProxyError]
+except:
+    pass
 
 from . import __version__
 
@@ -58,16 +72,16 @@ async def myrequests_get_handle_response(resp, retries: int, cdx=False, allow404
         if retries > 5:
             LOGGER.warning('retrying after 1s for %d', resp.status_code)
             if resp.text:
-                LOGGER.warning('response body is %s', resp.text)
+                LOGGER.debug('response body is %s', resp.text)
         else:
             LOGGER.info('retrying after 1s for %d', resp.status_code)
             if resp.text:
-                LOGGER.info('response body is %s', resp.text)
+                LOGGER.debug('response body is %s', resp.text)
         await anyio.sleep(1)
         return True, retries
     if resp.status_code in {400, 404}:  # pragma: no cover
         if resp.text:
-            LOGGER.info('response body is %s', resp.text)
+            LOGGER.debug('response body is %s', resp.text)
         raise RuntimeError('invalid url of some sort, status={} {}'.format(resp.status_code, resp.url))
     if 300 <= resp.status_code and resp.status_code < 400:
         return False, retries
@@ -114,11 +128,16 @@ async def myrequests_get(url, session=None, params=None, headers=None, cdx=False
                 break
             else:
                 continue
-        except (httpx.TransportError, httpx.DecodingError) as e:
+        except (httpx.TransportError, 
+                httpx.DecodingError, 
+                *specific_transport_error_types) as e:
             connect_errors = await myrequests_get_handle_error(e, connect_errors, url, params)
-        except httpx.HTTPError as e:  # pragma: no cover
+        except (httpx.HTTPError, httpcore.ProtocolError) as e:  # pragma: no cover
             LOGGER.warning('something unexpected happened, giving up after %s', str(e))
-            raise
+            connect_errors += 1
+            if connect_errors >= 5:
+                raise
+
 
     myrequests_get_update_seen_hostnames(url)
 
